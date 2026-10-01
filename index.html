@@ -80,17 +80,25 @@ let cart = {};
 let activeCategory = "All";
 
 function init() {
-    const categories = ["All", ...new Set(DATA.products.map(p => p.category))];
-    const chipsDiv = document.getElementById("chips");
-    chipsDiv.innerHTML = categories.map(cat => 
-        `<div class="chip ${cat === activeCategory ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`
-    ).join('');
+    renderChips();
     render();
+}
+
+function renderChips() {
+    const chipsDiv = document.getElementById("chips");
+    if (!chipsDiv) return;
+    
+    const categories = ["All", ...new Set(DATA.products.map(p => p.category))];
+    chipsDiv.innerHTML = categories.map(cat => {
+        const isAct = cat === activeCategory ? 'active' : '';
+        return `<div class="chip ${isAct}" onclick="setCategory('${cat}')">${cat}</div>`;
+    }).join('');
 }
 
 function setCategory(cat) {
     activeCategory = cat;
-    init();
+    renderChips();
+    render();
 }
 
 function updateQty(id, change) {
@@ -105,40 +113,28 @@ function clearCart() {
 }
 
 function render() {
-    const query = document.getElementById("search").value.toLowerCase();
+    const searchInput = document.getElementById("search");
+    const query = searchInput ? searchInput.value.toLowerCase() : "";
+    
     const filtered = DATA.products.filter(p => {
         const matchesCat = activeCategory === "All" || p.category === activeCategory;
         const matchesSearch = p.name.toLowerCase().includes(query);
         return matchesCat && matchesSearch;
     });
 
-    document.getElementById("count").innerText = `Showing ${filtered.length} products`;
+    const countSpan = document.getElementById("count");
+    if (countSpan) countSpan.innerText = `Showing ${filtered.length} products`;
 
     const grid = document.getElementById("grid");
-    if(filtered.length === 0) {
-        grid.innerHTML = `<div class="empty">No products found matching "${query}"</div>`;
-    } else {
-        grid.innerHTML = filtered.map(p => {
-            const qty = cart[p.id] || 0;
-            return `
-                <div class="card">
-                    <div class="pic">🎆</div>
-                    <div class="body">
-                        <div class="cat">${p.category}</div>
-${p.name}
-Per ${p.unit}
-₹${p.price}
-
-
--
-${qty}
-+
-
-
-
-
-`;
+    if (grid) {
+        if(filtered.length === 0) {
+            grid.innerHTML = `<div class="empty">No products found matching "${query}"</div>`;
+        } else {
+grid.innerHTML = filtered.map(p => {
+const qty = cart[p.id] || 0;
+return <div class="card"> <div class="pic">🎆</div> <div class="body"> <div class="cat">${p.category}</div> <div class="name">${p.name}</div> <div class="unit">Per ${p.unit}</div> <div class="price">₹${p.price}</div> <div class="controls"> <div class="qty"> <button onclick="updateQty(${p.id}, -1)">-</button> <span>${qty}</span> <button onclick="updateQty(${p.id}, 1)">+</button> </div> </div> </div> </div>;
 }).join('');
+}
 }
 let totalItems = 0;
 let grandTotal = 0;
@@ -149,12 +145,15 @@ totalItems += cart[id];
 grandTotal += (prod.price * cart[id]);
 }
 });
-document.getElementById("cartCount").innerText = totalItems;
-document.getElementById("grand").innerText = grandTotal;
+const cartCount = document.getElementById("cartCount");
+if (cartCount) cartCount.innerText = totalItems;
+const grand = document.getElementById("grand");
+if (grand) grand.innerText = grandTotal;
 }
 function openCart() {
 let grandTotal = 0;
 const summary = document.getElementById("summary");
+if (!summary) return;
 let html = Object.keys(cart).map(id => {
 const prod = DATA.products.find(p => p.id == id);
 const itemTotal = prod.price * cart[id];
@@ -194,4 +193,5 @@ alert("Copied to clipboard!");
 function printInvoice() {
 window.print();
 }
-window.onload = init;
+// Safely boot up once layout fully loads
+document.addEventListener("DOMContentLoaded", init);
